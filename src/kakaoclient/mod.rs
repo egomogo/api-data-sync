@@ -63,7 +63,7 @@ async fn test_get_by_category() {
     let result = kakao_client.get_by_category(Category::Restaurant).await;
     match &result {
         Ok(v) => println!("{v}"),
-        Err(e) => panic!("{e:?}")
+        Err(e) => panic!("{e:?}"),
     }
     assert!(result.is_ok());
 }
