@@ -1,8 +1,9 @@
-use core::panic;
+pub mod dto;
 
 #[allow(unused_imports)]
 use dotenv::dotenv;
-use serde::{Deserialize, Serialize};
+use dto::*;
+use std::collections::HashSet;
 
 use crate::utils;
 
@@ -16,28 +17,28 @@ impl Kakao {
             client: reqwest::Client::new(),
         }
     }
-    pub async fn get_by_category(
+    pub async fn get(
         &self,
         category: Category,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+        swx: f64,
+        swy: f64,
+        nex: f64,
+        ney: f64,
+    ) -> Result<HashSet<Document>, Box<dyn std::error::Error>> {
         let data = self
             .client
             .get(Self::url())
             .header("Authorization", format!("KakaoAK {}", Self::api_key()))
             .query(&[
                 ("category_group_code", category.code().as_str()),
-                ("x", "37.5796"),
-                ("y", "126.9227"),
+                ("rect", format!("{swx},{swy},{nex},{ney}").as_str()),
                 ("radius", "1000"),
             ])
             .send()
             .await?
             .json::<ResponseBody>()
             .await?;
-        match serde_json::to_string(&data) {
-            Ok(v) => Ok(v),
-            Err(e) => panic!("{e:?}"),
-        }
+        Ok(data.documents)
     }
     fn url() -> String {
         utils::Const::KakaoRestApiUrl.value()
@@ -60,9 +61,17 @@ fn test_url() {
 async fn test_get_by_category() {
     dotenv().ok();
     let kakao_client = Kakao::new();
-    let result = kakao_client.get_by_category(Category::Restaurant).await;
+    let result = kakao_client
+        .get(
+            Category::Restaurant,
+            127.164581,
+            37.604747,
+            127.171844,
+            37.612175,
+        )
+        .await;
     match &result {
-        Ok(v) => println!("{v}"),
+        Ok(v) => println!("{v:?}"),
         Err(e) => panic!("{e:?}"),
     }
     assert!(result.is_ok());
@@ -114,30 +123,4 @@ impl Category {
         }
         .to_owned()
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ResponseBody {
-    documents: Vec<Document>,
-    meta: Option<Meta>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Document {
-    address_name: Option<String>,
-    category_name: Option<String>,
-    id: Option<String>,
-    phone: Option<String>,
-    place_name: Option<String>,
-    place_url: Option<String>,
-    road_address_name: Option<String>,
-    x: Option<String>,
-    y: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Meta {
-    is_end: Option<bool>,
-    pegeable_count: Option<usize>,
-    total_count: usize,
 }
