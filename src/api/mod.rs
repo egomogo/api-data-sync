@@ -1,4 +1,5 @@
 pub mod dto;
+pub mod error;
 
 #[allow(unused_imports)]
 use dotenv::dotenv;
@@ -6,6 +7,24 @@ use dto::*;
 use std::collections::HashSet;
 
 use crate::utils;
+
+macro_rules! unwrap_result_or {
+    ($e: expr, $or: expr) => {
+        match $e {
+            Ok(v) => v,
+            Err(..) => $or,
+        }
+    };
+}
+
+macro_rules! unwrap_option_or {
+    ($e: expr, $or: expr) => {
+        match $e {
+            Some(v) => v,
+            None => $or,
+        }
+    };
+}
 
 pub struct Kakao {
     client: reqwest::Client,
@@ -17,32 +36,99 @@ impl Kakao {
             client: reqwest::Client::new(),
         }
     }
+
     pub async fn get(
         &self,
-        category: Category,
+        category: &Category,
         swx: f64,
         swy: f64,
         nex: f64,
         ney: f64,
-    ) -> Result<HashSet<Document>, Box<dyn std::error::Error>> {
-        let data = self
+    ) -> HashSet<Document> {
+        let mut stack = vec![(swx, swy, nex, ney)];
+        let mut result = HashSet::new();
+
+        while let Some((swx, swy, nex, ney)) = stack.pop() {
+            let mut page = 1;
+            let size = 15;
+            let body = unwrap_result_or!(
+                self.get_body(&category, swx, swy, nex, ney, page, size)
+                    .await,
+                continue
+            );
+            let (documents, meta) = (body.documents, body.meta);
+            let (pageable_count, total_count, ..) =
+                (meta.pageable_count, meta.total_count, meta.is_end);
+            // println!("depth: {}, {meta:?}", stack.len());    
+            if pageable_count < total_count {
+                let w = (nex - swy).abs();
+                let h = (ney - swy).abs();
+                match w > h {
+                    true => {
+                        stack.push((swx, swy, (nex + swx) / 2.0, ney));
+                        stack.push(((nex + swx) / 2.0, swy, nex, ney));
+                    }
+                    false => {
+                        stack.push((swx, (ney + swy) / 2.0, nex, ney));
+                        stack.push((swx, swy, nex, (ney + swy) / 2.0));
+                    }
+                }
+                continue;
+            }
+            let mut remain: isize = (pageable_count - documents.len()) as isize;
+            // println!("{remain} remains. {page}th page will be req");
+            result.extend(documents);
+            page += 1;
+            while remain > 0 {
+                let body = unwrap_result_or!(
+                    self.get_body(&category, swx, swy, nex, ney, page, size)
+                        .await,
+                    break
+                );
+                let documents = body.documents;
+                result.extend(documents);
+                remain -= size as isize;
+                // println!("{remain} remains. {page}th page will be req");
+                if body.meta.is_end {
+                    break;
+                }
+                page += 1;
+            }
+        }
+
+        result
+    }
+
+    async fn get_body(
+        &self,
+        category: &Category,
+        swx: f64,
+        swy: f64,
+        nex: f64,
+        ney: f64,
+        page: usize,
+        size: usize,
+    ) -> Result<ResponseBody, Box<dyn std::error::Error>> {
+        Ok(self
             .client
             .get(Self::url())
             .header("Authorization", format!("KakaoAK {}", Self::api_key()))
             .query(&[
                 ("category_group_code", category.code().as_str()),
                 ("rect", format!("{swx},{swy},{nex},{ney}").as_str()),
-                ("radius", "1000"),
+                ("page", page.to_string().as_str()),
+                ("size", size.to_string().as_str()),
             ])
             .send()
             .await?
             .json::<ResponseBody>()
-            .await?;
-        Ok(data.documents)
+            .await?)
     }
+
     fn url() -> String {
         utils::Const::KakaoRestApiUrl.value()
     }
+
     fn api_key() -> String {
         utils::Const::KakaoRestApiKey.value()
     }
@@ -58,23 +144,54 @@ fn test_url() {
 }
 
 #[tokio::test]
+async fn test_get_body() {
+    dotenv().ok();
+    let kakao_client = Kakao::new();
+    let meta = kakao_client
+        .get_body(
+            &Category::Restaurant,
+            126.916080,
+            37.574244,
+            126.928096,
+            37.584311,
+            1,
+            15,
+        )
+        .await
+        .unwrap()
+        .meta;
+    println!("{meta:?}");
+    let meta = kakao_client
+        .get_body(
+            &Category::Restaurant,
+            126.916080,
+            37.574244,
+            126.920000,
+            37.58,
+            1,
+            15,
+        )
+        .await
+        .unwrap()
+        .meta;
+    println!("{meta:?}");
+}
+
+#[tokio::test]
 async fn test_get_by_category() {
     dotenv().ok();
     let kakao_client = Kakao::new();
     let result = kakao_client
         .get(
-            Category::Restaurant,
-            127.164581,
-            37.604747,
-            127.171844,
-            37.612175,
+            &Category::Restaurant,
+            126.916080,
+            37.574244,
+            126.928096,
+            37.584311,
         )
         .await;
-    match &result {
-        Ok(v) => println!("{v:?}"),
-        Err(e) => panic!("{e:?}"),
-    }
-    assert!(result.is_ok());
+    println!("{}", result.len());
+    // println!("{result:?}");
 }
 
 #[allow(dead_code)]
