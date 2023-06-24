@@ -17,15 +17,6 @@ macro_rules! unwrap_result_or {
     };
 }
 
-macro_rules! unwrap_option_or {
-    ($e: expr, $or: expr) => {
-        match $e {
-            Some(v) => v,
-            None => $or,
-        }
-    };
-}
-
 pub struct Kakao {
     client: reqwest::Client,
 }
@@ -59,7 +50,7 @@ impl Kakao {
             let (documents, meta) = (body.documents, body.meta);
             let (pageable_count, total_count, ..) =
                 (meta.pageable_count, meta.total_count, meta.is_end);
-            // println!("depth: {}, {meta:?}", stack.len());    
+            println!("depth: {}, {meta:?}", stack.len());
             if pageable_count < total_count {
                 let w = (nex - swy).abs();
                 let h = (ney - swy).abs();
@@ -94,6 +85,7 @@ impl Kakao {
                 }
                 page += 1;
             }
+            println!("{}", result.len());
         }
 
         result
@@ -184,10 +176,10 @@ async fn test_get_by_category() {
     let result = kakao_client
         .get(
             &Category::Restaurant,
-            126.916080,
-            37.574244,
-            126.928096,
-            37.584311,
+            126.898128,
+            37.500534,
+            127.077195,
+            37.632722,
         )
         .await;
     println!("{}", result.len());
