@@ -11,10 +11,10 @@ pub struct ResponseBody {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Document {
     address_name: String,
-    category_name: String,
+    pub category_name: String,
     id: String,
     phone: String,
-    place_name: String,
+    pub place_name: String,
     place_url: String,
     road_address_name: String,
     x: String,

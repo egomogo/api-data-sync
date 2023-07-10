@@ -1,12 +1,11 @@
 pub mod dto;
-pub mod error;
 
 #[allow(unused_imports)]
 use dotenv::dotenv;
 use dto::*;
 use std::collections::HashSet;
 
-use crate::utils;
+use crate::{utils, types::*};
 
 macro_rules! unwrap_result_or {
     ($e: expr, $or: expr) => {
@@ -17,7 +16,17 @@ macro_rules! unwrap_result_or {
     };
 }
 
-pub struct Kakao {
+pub async fn get_from_kakao(sw: Coords, ne: Coords) -> HashSet<Document> {
+    let kakao = Kakao::new();
+    let mut restaurants = kakao
+        .get(&Category::Restaurant, sw.x, sw.y, ne.x, ne.y)
+        .await;
+    let cafe = kakao.get(&Category::Cafe, sw.x, sw.y, ne.x, ne.y).await;
+    restaurants.extend(cafe);
+    restaurants
+}
+
+struct Kakao {
     client: reqwest::Client,
 }
 
@@ -28,7 +37,7 @@ impl Kakao {
         }
     }
 
-    pub async fn get(
+    async fn get(
         &self,
         category: &Category,
         swx: f64,
@@ -43,7 +52,7 @@ impl Kakao {
             let mut page = 1;
             let size = 15;
             let body = unwrap_result_or!(
-                self.get_body(&category, swx, swy, nex, ney, page, size)
+                self.get_body(category, swx, swy, nex, ney, page, size)
                     .await,
                 continue
             );
@@ -72,7 +81,7 @@ impl Kakao {
             page += 1;
             while remain > 0 {
                 let body = unwrap_result_or!(
-                    self.get_body(&category, swx, swy, nex, ney, page, size)
+                    self.get_body(category, swx, swy, nex, ney, page, size)
                         .await,
                     break
                 );
@@ -135,7 +144,8 @@ fn test_url() {
     )
 }
 
-#[tokio::test]
+#[tokio::main]
+#[test]
 async fn test_get_body() {
     dotenv().ok();
     let kakao_client = Kakao::new();
@@ -169,20 +179,38 @@ async fn test_get_body() {
     println!("{meta:?}");
 }
 
-#[tokio::test]
+#[tokio::main]
+#[test]
 async fn test_get_by_category() {
+    use std::collections::HashMap;
     dotenv().ok();
     let kakao_client = Kakao::new();
     let result = kakao_client
         .get(
             &Category::Restaurant,
-            126.898128,
-            37.500534,
-            127.077195,
-            37.632722,
+            126.907418,
+            37.569670,
+            126.938746,
+            37.585196,
         )
         .await;
-    println!("{}", result.len());
+    let mut group = HashMap::new();
+    result.iter().for_each(|d| {
+        let parsed = match d.category_name.split(" > ").skip(1).next() {
+            Some(v) => v,
+            None => d.category_name.as_str(),
+        };
+        group.entry(parsed).or_insert(vec![]).push(d);
+    });
+    for (k, v) in group.iter() {
+        println!("{k}: {}", v.len());
+        for d in v.iter() {
+            println!("{} {}", d.place_name, d.category_name);
+        }
+        println!();
+    }
+    // println!("{:?}", group);
+    // println!("{}", result.len());
     // println!("{result:?}");
 }
 
