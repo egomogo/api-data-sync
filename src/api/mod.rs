@@ -59,7 +59,7 @@ impl Kakao {
             let (documents, meta) = (body.documents, body.meta);
             let (pageable_count, total_count, ..) =
                 (meta.pageable_count, meta.total_count, meta.is_end);
-            println!("depth: {}, {meta:?}", stack.len());
+            // println!("depth: {}, {meta:?}", stack.len());
             if pageable_count < total_count {
                 let w = (nex - swy).abs();
                 let h = (ney - swy).abs();
@@ -94,7 +94,7 @@ impl Kakao {
                 }
                 page += 1;
             }
-            println!("{}", result.len());
+            // println!("{}", result.len());
         }
 
         result
@@ -187,7 +187,7 @@ async fn test_get_by_category() {
     let kakao_client = Kakao::new();
     let result = kakao_client
         .get(
-            &Category::Restaurant,
+            &Category::Cafe,
             126.907418,
             37.569670,
             126.938746,

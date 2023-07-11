@@ -2,6 +2,8 @@
 pub enum Error {
     InvalidLatitudeRange,
     InvalidLongitudeRange,
+    DbConnectionFailed(sqlx::Error),
+    SqlExecutionFailed(sqlx::Error),
 }
 
 impl std::error::Error for Error {}
@@ -11,4 +13,3 @@ impl std::fmt::Display for Error {
         write!(f, "{:?}", self)
     }
 }
-
