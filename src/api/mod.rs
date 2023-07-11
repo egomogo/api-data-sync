@@ -5,7 +5,7 @@ use dotenv::dotenv;
 use dto::*;
 use std::collections::HashSet;
 
-use crate::{utils, types::*};
+use crate::{types::*, utils};
 
 macro_rules! unwrap_result_or {
     ($e: expr, $or: expr) => {
@@ -100,6 +100,7 @@ impl Kakao {
         result
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn get_body(
         &self,
         category: &Category,

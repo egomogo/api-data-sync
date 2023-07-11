@@ -1,5 +1,3 @@
-use std::{collections::HashMap, fmt::Display};
-
 use serde::Serialize;
 
 use crate::{error, utils::geo::*};
@@ -28,6 +26,7 @@ macro_rules! named_enum {
             $($variant:ident),*,
         }
     ) => {
+        #[allow(clippy::upper_case_acronyms)]
         #[allow(non_camel_case_types)]
         #[derive(Eq, PartialEq, Hash, Clone, Debug)]
         pub enum $name {
@@ -44,9 +43,6 @@ macro_rules! named_enum {
     };
 }
 
-/**
- * db enum
- */
 named_enum! {
     pub enum CategoryType {
         OTHERS,
@@ -66,7 +62,7 @@ named_enum! {
     }
 }
 
-static CATEGORY_MAP: &[(&'static str, CategoryType)] = &[
+static CATEGORY_MAP: &[(& str, CategoryType)] = &[
     ("한식", CategoryType::KOREAN),
     ("해물,생선", CategoryType::SEA_FOOD),
     ("육류,고기", CategoryType::MEAT),
@@ -117,7 +113,6 @@ static CATEGORY_MAP: &[(&'static str, CategoryType)] = &[
 
 impl From<&str> for CategoryType {
     fn from(value: &str) -> Self {
-        let idx = CATEGORY_MAP.iter().filter(|e| e.0 == value).next();
         match CATEGORY_MAP.iter().find(|e| e.0 == value) {
             Some((.., t)) => t.clone(),
             None => CategoryType::UNDEFINED,

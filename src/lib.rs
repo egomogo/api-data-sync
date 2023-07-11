@@ -63,7 +63,7 @@ pub async fn run() -> Result<(), error::Error> {
                 y: d.y.parse().unwrap(),
                 kakao_place_id: d.id,
                 created_at: now,
-                updated_at: Some(now.clone()),
+                updated_at: Some(now),
             };
             let categories = get_categories_from(d.category_name, &rid);
             (r, categories)
@@ -78,7 +78,7 @@ pub async fn run() -> Result<(), error::Error> {
 }
 
 fn get_categories_from(c: String, rid: &str) -> Vec<db::models::Category> {
-    c.split(">")
+    c.split('>')
         .map(|s| get_category_from(s, rid))
         .unique_by(|c| c.categories.clone())
         .filter(|c| c.categories.ne(CategoryType::UNDEFINED.name()))
@@ -103,12 +103,12 @@ fn test_get_categories_from() {
     .collect();
     assert_eq!(result, vec!["CAFE_DESSERT".to_string()]);
 
-    let result: Vec<_> = get_categories_from(
-        "음식점 > 양식 > 피자 > 피자스쿨".to_string(), 
-        "some"
-    )
-    .into_iter()
-    .map(|c| c.categories)
-    .collect();
-    assert_eq!(result, vec!["WESTERN_FOOD".to_string(), "PIZZA".to_string()]);
+    let result: Vec<_> = get_categories_from("음식점 > 양식 > 피자 > 피자스쿨".to_string(), "some")
+        .into_iter()
+        .map(|c| c.categories)
+        .collect();
+    assert_eq!(
+        result,
+        vec!["WESTERN_FOOD".to_string(), "PIZZA".to_string()]
+    );
 }

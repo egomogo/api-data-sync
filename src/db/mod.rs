@@ -1,6 +1,6 @@
 pub mod models;
 
-use sqlx::{pool::PoolConnection, MySql, MySqlPool};
+use sqlx::MySqlPool;
 
 use crate::{error, utils::*};
 
@@ -12,7 +12,7 @@ pub struct DbPool {
 
 impl DbPool {
     pub async fn new() -> Result<DbPool, error::Error> {
-        match MySqlPool::connect(&Const::DB_URL.value()).await {
+        match MySqlPool::connect(&Const::DbUrl.value()).await {
             Ok(pool) => Ok(DbPool { pool }),
             Err(e) => Err(error::Error::DbConnectionFailed(e)),
         }
@@ -46,8 +46,8 @@ impl DbPool {
             .execute(pool)
             .await;
         match result {
-            Ok(..) => return Ok(()),
-            Err(e) => return Err(error::Error::SqlExecutionFailed(e)),
+            Ok(..) => Ok(()),
+            Err(e) => Err(error::Error::SqlExecutionFailed(e)),
         }
     }
 
@@ -60,8 +60,8 @@ impl DbPool {
         .execute(pool)
         .await;
         match result {
-            Ok(..) => return Ok(()),
-            Err(e) => return Err(error::Error::SqlExecutionFailed(e)),
+            Ok(..) => Ok(()),
+            Err(e) => Err(error::Error::SqlExecutionFailed(e)),
         }
     }
 }
@@ -73,7 +73,7 @@ pub async fn test_connection() -> Result<(), sqlx::Error> {
     use models::*;
     dotenv::dotenv().ok();
 
-    let url = Const::DB_URL.value();
+    let url = Const::DbUrl.value();
 
     let pool = MySqlPool::connect(&url).await?;
 
@@ -139,7 +139,7 @@ pub async fn select_all() -> Result<(), sqlx::Error> {
     use dotenv;
     dotenv::dotenv().ok();
 
-    let url = Const::DB_URL.value();
+    let url = Const::DbUrl.value();
 
     let pool = MySqlPool::connect(&url).await?;
 
@@ -153,6 +153,10 @@ pub async fn select_all() -> Result<(), sqlx::Error> {
         .await?;
     println!("{:?}", categories.iter().take(100).collect::<Vec<_>>());
 
-    println!("restaurant: {}, category: {}", restaurants.len(), categories.len());
+    println!(
+        "restaurant: {}, category: {}",
+        restaurants.len(),
+        categories.len()
+    );
     Ok(())
 }
