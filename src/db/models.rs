@@ -9,6 +9,8 @@ pub struct Restaurant {
     pub x: f64,
     pub y: f64,
     pub kakao_place_id: String,
+    pub api_called_at: chrono::DateTime<chrono::Utc>,
+    pub scraped_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }

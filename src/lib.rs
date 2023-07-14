@@ -62,6 +62,8 @@ pub async fn run() -> Result<(), error::Error> {
                 x: d.x.parse().unwrap(),
                 y: d.y.parse().unwrap(),
                 kakao_place_id: d.id,
+                api_called_at: now,
+                scraped_at: None,
                 created_at: now,
                 updated_at: Some(now),
             };

@@ -21,7 +21,9 @@ pub async fn get_from_kakao(sw: Coords, ne: Coords) -> HashSet<Document> {
     let mut restaurants = kakao
         .get(&Category::Restaurant, sw.x, sw.y, ne.x, ne.y)
         .await;
+    println!("{:?}: {}", Category::Restaurant, restaurants.len());
     let cafe = kakao.get(&Category::Cafe, sw.x, sw.y, ne.x, ne.y).await;
+    println!("{:?}: {}", Category::Cafe, cafe.len());
     restaurants.extend(cafe);
     restaurants
 }
@@ -216,6 +218,7 @@ async fn test_get_by_category() {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum Category {
     Supermarket,
     ConvinienceStore,

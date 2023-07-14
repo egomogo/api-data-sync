@@ -33,7 +33,7 @@ impl DbPool {
     }
 
     async fn insert_restaurant(r: Restaurant, pool: &MySqlPool) -> Result<(), error::Error> {
-        let sql = "insert into restaurant (id, name, address, x, y, kakao_place_id, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?)";
+        let sql = "insert into restaurant (id, name, address, x, y, kakao_place_id, api_called_at, scraped_at, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         let result = sqlx::query(sql)
             .bind(r.id)
             .bind(r.name)
@@ -41,6 +41,8 @@ impl DbPool {
             .bind(r.x)
             .bind(r.y)
             .bind(r.kakao_place_id)
+            .bind(r.api_called_at)
+            .bind(r.scraped_at)
             .bind(r.created_at)
             .bind(r.updated_at)
             .execute(pool)
